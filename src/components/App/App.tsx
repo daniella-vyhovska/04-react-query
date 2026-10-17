@@ -1,5 +1,5 @@
 import { useState } from "react";
-import toast, { Toaster } from "react-hot-toast";
+import { Toaster } from "react-hot-toast";
 import { useQuery } from "@tanstack/react-query";
 
 import SearchBar from "../SearchBar/SearchBar";
