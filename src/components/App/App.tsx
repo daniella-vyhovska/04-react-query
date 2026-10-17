@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Toaster } from "react-hot-toast";
+import { useState, useEffect } from "react";
+import toast, { Toaster } from "react-hot-toast";
 import { useQuery } from "@tanstack/react-query";
 
 import SearchBar from "../SearchBar/SearchBar";
@@ -39,12 +39,21 @@ export default function App() {
     queryFn: () => fetchMovies(query, page),
     enabled: query.length > 0,
 
-    // ⭐ ВАЖЛИВО: placeholderData для плавної пагінації
+    // ⭐ Плавна пагінація без миготіння
     placeholderData: (prev) => prev,
   });
 
   const movies = data?.results ?? [];
   const totalPages = data?.total_pages ?? 0;
+
+  // -----------------------------
+  // Toast: фільми не знайдено
+  // -----------------------------
+  useEffect(() => {
+    if (!isLoading && !isError && query && movies.length === 0) {
+      toast.error("No movies found for your request.");
+    }
+  }, [isLoading, isError, movies.length, query]);
 
   // -----------------------------
   // Form Action handler
