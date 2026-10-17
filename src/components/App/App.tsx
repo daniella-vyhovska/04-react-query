@@ -1,5 +1,6 @@
 import { useState } from "react";
-import toast, { Toaster } from "react-hot-toast";
+import { Toaster } from "react-hot-toast";
+import { useQuery } from "@tanstack/react-query";
 
 import SearchBar from "../SearchBar/SearchBar";
 import MovieGrid from "../MovieGrid/MovieGrid";
@@ -12,35 +13,40 @@ import type { Movie } from "../../types/movie";
 
 import styles from "./App.module.css";
 
+// ReactPaginate import fix for Vite 8+
+import ReactPaginateModule from "react-paginate";
+import type { ReactPaginateProps } from "react-paginate";
+import type { ComponentType } from "react";
+
+type ModuleWithDefault<T> = { default: T };
+const ReactPaginate = (
+  ReactPaginateModule as unknown as ModuleWithDefault<ComponentType<ReactPaginateProps>>
+).default;
+
 export default function App() {
-  const [movies, setMovies] = useState<Movie[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(false);
+  const [query, setQuery] = useState("");
+  const [page, setPage] = useState(1);
   const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
+
+  // -----------------------------
+  // React Query
+  // -----------------------------
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ["movies", query, page],
+    queryFn: () => fetchMovies(query, page),
+    enabled: query.length > 0,
+  });
+
+  const movies = data?.results ?? [];
+  const totalPages = data?.total_pages ?? 0;
 
   // -----------------------------
   // Form Action handler
   // -----------------------------
-  const handleSearch = async (query: string) => {
-  setMovies([]);
-  setError(false);
-  setLoading(true);
-
-  try {
-    const results = await fetchMovies(query);
-
-    if (results.length === 0) {
-      toast.error("No movies found for your request.");
-    }
-
-    setMovies(results);
-  } catch {
-    setError(true);
-  } finally {
-    setLoading(false);
-  }
-};
-
+  const handleSearch = (searchQuery: string) => {
+    setQuery(searchQuery);
+    setPage(1);
+  };
 
   // -----------------------------
   // Modal handlers
@@ -57,25 +63,35 @@ export default function App() {
     <div className={styles.app}>
       <Toaster position="top-right" />
 
-      {/* SearchBar через action */}
       <SearchBar onSubmit={handleSearch} />
 
+      {isLoading && <Loader />}
+      {isError && <ErrorMessage />}
 
-      {/* Loader */}
-      {loading && <Loader />}
+      {!isLoading && !isError && movies.length > 0 && (
+        <>
+          <MovieGrid movies={movies} onSelect={handleSelectMovie} />
 
-      {/* Error message */}
-      {error && <ErrorMessage />}
-
-      {/* Movie grid */}
-      {!loading && !error && movies.length > 0 && (
-        <MovieGrid movies={movies} onSelect={handleSelectMovie} />
+          {totalPages > 1 && (
+            <ReactPaginate
+              pageCount={totalPages}
+              pageRangeDisplayed={5}
+              marginPagesDisplayed={1}
+              onPageChange={({ selected }) => setPage(selected + 1)}
+              forcePage={page - 1}
+              containerClassName={styles.pagination}
+              activeClassName={styles.active}
+              nextLabel="→"
+              previousLabel="←"
+            />
+          )}
+        </>
       )}
 
-      {/* Modal */}
       {selectedMovie && (
         <MovieModal movie={selectedMovie} onClose={handleCloseModal} />
       )}
     </div>
   );
 }
+
