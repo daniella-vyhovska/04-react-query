@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Toaster } from "react-hot-toast";
+import toast, { Toaster } from "react-hot-toast";
 import { useQuery } from "@tanstack/react-query";
 
 import SearchBar from "../SearchBar/SearchBar";
@@ -13,14 +13,17 @@ import type { Movie } from "../../types/movie";
 
 import styles from "./App.module.css";
 
-// ReactPaginate import fix for Vite 8+
+// --- ReactPaginate import fix for Vite 8+ ---
 import ReactPaginateModule from "react-paginate";
 import type { ReactPaginateProps } from "react-paginate";
 import type { ComponentType } from "react";
 
 type ModuleWithDefault<T> = { default: T };
+
 const ReactPaginate = (
-  ReactPaginateModule as unknown as ModuleWithDefault<ComponentType<ReactPaginateProps>>
+  ReactPaginateModule as unknown as ModuleWithDefault<
+    ComponentType<ReactPaginateProps>
+  >
 ).default;
 
 export default function App() {
@@ -35,6 +38,9 @@ export default function App() {
     queryKey: ["movies", query, page],
     queryFn: () => fetchMovies(query, page),
     enabled: query.length > 0,
+
+    // ⭐ ВАЖЛИВО: placeholderData для плавної пагінації
+    placeholderData: (prev) => prev,
   });
 
   const movies = data?.results ?? [];
@@ -94,4 +100,3 @@ export default function App() {
     </div>
   );
 }
-
